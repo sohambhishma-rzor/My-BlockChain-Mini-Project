@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Academic Certificate Verification</title>
+
+  <!-- Ethers.js -->
+  <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.5/dist/ethers.umd.min.js"></script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f0f4f8;
+      color: #1e293b;
+    }
+
+    header {
+      background: #123b65;
+      color: white;
+      text-align: center;
+      padding: 25px 15px;
+    }
+
+    header h1 {
+      margin: 0 0 10px;
+    }
+
+    header p {
+      margin: 0;
+    }
+
+    main {
+      max-width: 850px;
+      margin: 25px auto;
+      padding: 0 15px;
+    }
+
+    .card {
+      background: white;
+      padding: 22px;
+      margin-bottom: 20px;
+      border-radius: 12px;
+      box-shadow: 0 3px 12px #00000012;
+    }
+
+    h2 {
+      color: #123b65;
+      margin-top: 0;
+    }
+
+    input {
+      display: block;
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      font-size: 15px;
+    }
+
+    button {
+      padding: 12px 18px;
+      border: 0;
+      border-radius: 6px;
+      color: white;
+      background: #1769aa;
+      cursor: pointer;
+      font-size: 15px;
+      margin: 5px 4px 5px 0;
+    }
+
+    button:hover {
+      background: #104e80;
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: wait;
+    }
+
+    .result {
+      margin-top: 15px;
+      padding: 14px;
+      border-radius: 7px;
+      background: #f1f5f9;
+      overflow-wrap: anywhere;
+      line-height: 1.7;
+      white-space: pre-line;
+    }
+
+    .success {
+      color: #166534;
+      background: #dcfce7;
+    }
+
+    .error {
+      color: #b91c1c;
+      background: #fee2e2;
+    }
+
+    .warning {
+      color: #92400e;
+      background: #fef3c7;
+    }
+
+    footer {
+      text-align: center;
+      padding: 20px;
+      color: #64748b;
+      font-size: 13px;
+    }
+  </style>
+</head>
+
+<body>
+
+<header>
+  <h1>Academic Certificate Verification</h1>
+  <p>Blockchain-based certificate registration and verification</p>
+</header>
+
+<main>
+
+  <!-- CONNECT WALLET -->
+  <section class="card">
+
+    <h2>Connect Wallet</h2>
+
+    <p>
+      Connect the MetaMask wallet used to interact with your deployed
+      certificate smart contract.
+    </p>
+
+    <button id="connectBtn" onclick="connectWallet()">
+      Connect MetaMask
+    </button>
+
+    <button id="switchBtn" onclick="switchToSepolia()">
+      Switch to Sepolia
+    </button>
+
+    <div id="walletStatus" class="result">
+      Wallet not connected.
+    </div>
+
+  </section>
+
+
+  <!-- ISSUE CERTIFICATE -->
+  <section class="card">
+
+    <h2>Issue Certificate</h2>
+
+    <p>
+      Only the authorized certificate issuer should use this section.
+    </p>
+
+    <input
+      id="issueId"
+      placeholder="Certificate ID"
+    >
+
+    <input
+      id="studentName"
+      placeholder="Student Name"
+    >
+
+    <input
+      id="course"
+      placeholder="Course Name"
+    >
+
+    <input
+      id="institution"
+      placeholder="Institution Name"
+    >
+
+    <button onclick="issueCertificate()">
+      Issue Certificate
+    </button>
+
+    <div id="issueResult" class="result" hidden></div>
+
+  </section>
+
+
+  <!-- VERIFY CERTIFICATE -->
+  <section class="card">
+
+    <h2>Verify Certificate</h2>
+
+    <input
+      id="verifyId"
+      placeholder="Enter Certificate ID"
+    >
+
+    <button onclick="verifyCertificate()">
+      Verify Certificate
+    </button>
+
+    <div id="verifyResult" class="result" hidden></div>
+
+  </section>
+
+
+  <!-- REVOKE CERTIFICATE -->
+  <section class="card">
+
+    <h2>Revoke Certificate</h2>
+
+    <p>
+      Only the contract owner can revoke a certificate.
+    </p>
+
+    <input
+      id="revokeId"
+      placeholder="Certificate ID to revoke"
+    >
+
+    <button onclick="revokeCertificate()">
+      Revoke Certificate
+    </button>
+
+    <div id="revokeResult" class="result" hidden></div>
+
+  </section>
+
+</main>
+
+
+<footer>
+  Academic Certificate Verification Mini Project |
+  Solidity + HTML + MetaMask + Remix VM
+</footer>
+
+
+<script>
+
+  /* =========================================================
+     FRONTEND CONFIGURATION
+     ========================================================= */
+
+  /*
+     IMPORTANT:
+
+     This HTML file does NOT connect to Remix VM directly.
+
+     MetaMask connection is kept only for wallet display.
+
+     Actual certificate operations are performed by:
+
+          remix_vm.js
+
+     inside Remix IDE.
+  */
+
+
+  /* =========================================================
+     MESSAGE FUNCTION
+     ========================================================= */
+
+  function showMessage(id, message, type = "") {
+
+    const element = document.getElementById(id);
+
+    element.hidden = false;
+
+    element.className = "result " + type;
+
+    element.textContent = message;
+  }
+
+
+  /* =========================================================
+     ERROR HANDLING
+     ========================================================= */
+
+  function errorMessage(error) {
+
+    console.error("Full error:", error);
+
+    if (!error) {
+      return "Unknown error occurred.";
+    }
+
+    if (
+      error.code === 4001 ||
+      error.code === "ACTION_REJECTED"
+    ) {
+      return "MetaMask request was rejected by the user.";
+    }
+
+    if (error.code === 4902) {
+      return "Sepolia network is not available in MetaMask.";
+    }
+
+    if (error.reason) {
+      return error.reason;
+    }
+
+    if (error.shortMessage) {
+      return error.shortMessage;
+    }
+
+    if (error.message) {
+      return error.message;
+    }
+
+    return "An unexpected error occurred.";
+  }
+
+
+  /* =========================================================
+     SWITCH TO SEPOLIA
+     ========================================================= */
+
+  async function switchToSepolia() {
+
+    try {
+
+      if (!window.ethereum) {
+
+        throw new Error(
+          "MetaMask is not installed or not detected."
+        );
+
+      }
+
+      await window.ethereum.request({
+
+        method: "wallet_switchEthereumChain",
+
+        params: [
+          {
+            chainId: "0xaa36a7"
+          }
+        ]
+
+      });
+
+
+      showMessage(
+        "walletStatus",
+        "Switched to Sepolia successfully. Now click Connect MetaMask.",
+        "success"
+      );
+
+    }
+
+    catch (error) {
+
+      if (error.code === 4902) {
+
+        try {
+
+          await window.ethereum.request({
+
+            method: "wallet_addEthereumChain",
+
+            params: [
+              {
+                chainId: "0xaa36a7",
+
+                chainName: "Sepolia",
+
+                nativeCurrency: {
+                  name: "Sepolia Ether",
+                  symbol: "ETH",
+                  decimals: 18
+                },
+
+                rpcUrls: [
+                  "https://ethereum-sepolia-rpc.publicnode.com"
+                ],
+
+                blockExplorerUrls: [
+                  "https://sepolia.etherscan.io"
+                ]
+              }
+            ]
+
+          });
+
+
+          showMessage(
+            "walletStatus",
+            "Sepolia network was added. Now click Connect MetaMask.",
+            "success"
+          );
+
+        }
+
+        catch (addError) {
+
+          showMessage(
+            "walletStatus",
+            errorMessage(addError),
+            "error"
+          );
+
+        }
+
+        return;
+      }
+
+
+      showMessage(
+        "walletStatus",
+        errorMessage(error),
+        "error"
+      );
+
+    }
+
+  }
+
+
+  /* =========================================================
+     CONNECT METAMASK
+     ========================================================= */
+
+  async function connectWallet() {
+
+    try {
+
+      if (!window.ethereum) {
+
+        throw new Error(
+          "MetaMask was not detected. Please install MetaMask."
+        );
+
+      }
+
+
+      /*
+         MetaMask is ONLY used for connection/display.
+      */
+
+      const provider =
+        new ethers.BrowserProvider(
+          window.ethereum
+        );
+
+
+      await provider.send(
+        "eth_requestAccounts",
+        []
+      );
+
+
+      const network =
+        await provider.getNetwork();
+
+
+      const signer =
+        await provider.getSigner();
+
+
+      const address =
+        await signer.getAddress();
+
+
+      showMessage(
+
+        "walletStatus",
+
+        "MetaMask Connected Successfully!\n\n" +
+
+        "Wallet Address:\n" +
+        address +
+
+        "\n\nNetwork:\n" +
+        network.name +
+
+        "\nChain ID:\n" +
+        network.chainId.toString() +
+
+        "\n\nBlockchain Operations:\n" +
+        "Remix VM",
+
+        "success"
+      );
+
+    }
+
+    catch (error) {
+
+      showMessage(
+        "walletStatus",
+        errorMessage(error),
+        "error"
+      );
+
+    }
+
+  }
+
+
+  /* =========================================================
+     ISSUE CERTIFICATE
+     ========================================================= */
+
+  async function issueCertificate() {
+
+    try {
+
+      const id =
+        document
+          .getElementById("issueId")
+          .value
+          .trim();
+
+
+      const name =
+        document
+          .getElementById("studentName")
+          .value
+          .trim();
+
+
+      const course =
+        document
+          .getElementById("course")
+          .value
+          .trim();
+
+
+      const institution =
+        document
+          .getElementById("institution")
+          .value
+          .trim();
+
+
+      if (
+        !id ||
+        !name ||
+        !course ||
+        !institution
+      ) {
+
+        throw new Error(
+          "Please fill in all certificate fields."
+        );
+
+      }
+
+
+      showMessage(
+        "issueResult",
+
+        "Certificate information collected.\n\n" +
+        "Use remix_vm.js in Remix VM to issue this certificate.\n\n" +
+
+        "ID: " + id +
+        "\nStudent: " + name +
+        "\nCourse: " + course +
+        "\nInstitution: " + institution,
+
+        "warning"
+      );
+
+    }
+
+    catch (error) {
+
+      showMessage(
+        "issueResult",
+        errorMessage(error),
+        "error"
+      );
+
+    }
+
+  }
+
+
+  /* =========================================================
+     VERIFY CERTIFICATE
+     ========================================================= */
+
+  async function verifyCertificate() {
+
+    try {
+
+      const id =
+        document
+          .getElementById("verifyId")
+          .value
+          .trim();
+
+
+      if (!id) {
+
+        throw new Error(
+          "Enter a certificate ID."
+        );
+
+      }
+
+
+      showMessage(
+
+        "verifyResult",
+
+        "Certificate ID received:\n\n" +
+        id +
+        "\n\n" +
+
+        "Verification is performed from the Remix VM contract.\n\n" +
+
+        "Run verifyCertificate(id) in remix_vm.js.",
+
+        "warning"
+
+      );
+
+    }
+
+    catch (error) {
+
+      showMessage(
+        "verifyResult",
+        errorMessage(error),
+        "error"
+      );
+
+    }
+
+  }
+
+
+  /* =========================================================
+     REVOKE CERTIFICATE
+     ========================================================= */
+
+  async function revokeCertificate() {
+
+    try {
+
+      const id =
+        document
+          .getElementById("revokeId")
+          .value
+          .trim();
+
+
+      if (!id) {
+
+        throw new Error(
+          "Enter a certificate ID."
+        );
+
+      }
+
+
+      const confirmed =
+        confirm(
+          "Are you sure you want to revoke this certificate?"
+        );
+
+
+      if (!confirmed) {
+        return;
+      }
+
+
+      showMessage(
+
+        "revokeResult",
+
+        "Certificate ID received:\n\n" +
+        id +
+        "\n\n" +
+
+        "Revocation is performed from the Remix VM contract.\n\n" +
+
+        "Run revokeCertificate(id) in remix_vm.js.",
+
+        "warning"
+
+      );
+
+    }
+
+    catch (error) {
+
+      showMessage(
+        "revokeResult",
+        errorMessage(error),
+        "error"
+      );
+
+    }
+
+  }
+
+
+  /* =========================================================
+     ACCOUNT CHANGE
+     ========================================================= */
+
+  if (window.ethereum) {
+
+    window.ethereum.on(
+      "accountsChanged",
+      function () {
+
+        showMessage(
+
+          "walletStatus",
+
+          "MetaMask account changed.\n\n" +
+          "Please click Connect MetaMask again."
+
+        );
+
+      }
+    );
+
+
+    /* =======================================================
+       NETWORK CHANGE
+       ======================================================= */
+
+    window.ethereum.on(
+      "chainChanged",
+      function () {
+
+        showMessage(
+
+          "walletStatus",
+
+          "Network changed.\n\n" +
+          "Please click Connect MetaMask again."
+
+        );
+
+      }
+    );
+
+  }
+
+</script>
+
+</body>
+</html>

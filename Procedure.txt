@@ -1,0 +1,66 @@
+# Steps to execute this Mini project
+
+# Academic Certificate Verification
+
+## Step 1 – Open Remix IDE
+Open **Remix IDE** in your browser:
+https://remix.ethereum.org/
+
+## Step 2 – Create Solidity File
+Create a new file named:
+`CertificateVerification.sol`
+Paste the provided Solidity smart contract code into the file.
+
+## Step 3 – Compile the Smart Contract
+Open **Solidity Compiler**, select a compiler version compatible with **Solidity ^0.8.20**, and click **Compile CertificateVerification.sol**.
+
+## Step 4 – Select Remix VM
+Go to **Deploy & Run Transactions** and select **Remix VM** as the environment.
+
+## Step 5 – Deploy the Contract
+Select the `AcademicCertificate` contract and click **Deploy** using a Remix VM account.
+
+## Step 6 – Copy Contract Address
+After deployment, copy the **deployed contract address** shown under **Deployed Contracts**.
+
+## Step 11 – Check Contract Owner
+The account that deployed the contract becomes the **owner**. Use this same account for issuing and revoking certificates.
+
+## Step 12 – Issue a Certificate
+Use the `issueCertificate()` function with:
+
+* Certificate ID
+* Student Name
+* Course
+* Institution
+
+Example:
+`CERT001, Rahul Sharma, B.Tech Computer Science, ABC University`
+
+## Step 13 – Verify a Certificate
+Use `verifyCertificate()` and enter the certificate ID.
+The system returns the certificate details and its verification/revocation status.
+
+## Step 14 – Revoke a Certificate
+The contract owner can use `revokeCertificate()` to revoke an existing certificate.
+The certificate is not deleted; its status changes to **revoked**.
+
+## Step 15 – Verify Revoked Certificate
+After revoking a certificate, use `verifyCertificate()` again.
+The result should show:
+`Exists: true`
+`Revoked: true`
+This confirms that the certificate has been successfully revoked.
+
+## Additional Step: After this Run Remix_VM.js file in Remix IDE.
+Copy the deployed contract address and replace it with line where "PASTE_YOUR_CONTRACT_ADDRESS_HERE" is written
+in Remix_VM.js file.
+This add extra verification layer for the project.
+
+## Step 16 - Open VS code and run Index.html
+Note: You have to run this file using Open with Live server Functionality. For this you need to
+download Live Server extension in VS code.
+
+## Step 17 - After executing this file a webpage will open
+In this webpage you need to connect the webpage to metamask id.
+Now you can use frontend functionality to issue, revoke and verify certification record. 
